@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ko"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=860">
+<title>행사 기간 배너</title>
+<style>
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#fff;font-family:'Pretendard','Malgun Gothic',sans-serif}
+.banner{position:relative;width:860px;height:2178px;overflow:hidden;background:#fff}
+.original{display:block;width:860px;height:2178px}
+.event-date{position:absolute;left:255px;top:1782px;width:485px;height:62px;background:#fff;color:#222;display:flex;align-items:center;padding-left:8px;font-size:36px;font-weight:600;line-height:1;white-space:nowrap}
+</style></head><body>
+<div class="banner"><img class="original" src="banner-original.jpg" alt="이벤트 안내 배너"><div class="event-date" id="eventDate">계산 중...</div></div>
+<script>
+function dateLabel(instant){
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric'}).formatToParts(instant);
+ const get=t=>Number(parts.find(p=>p.type===t).value);
+ const start=new Date(Date.UTC(get('year'),get('month')-1,get('day')));
+ // Keep the current Korea-time Monday-Sunday range unchanged during the week.
+ start.setUTCDate(start.getUTCDate()-((start.getUTCDay()+6)%7));
+ const end=new Date(start);end.setUTCDate(end.getUTCDate()+6);
+ return (start.getUTCMonth()+1)+'월 '+start.getUTCDate()+'일 ~ '+(end.getUTCMonth()+1)+'월 '+end.getUTCDate()+'일';
+}
+function refreshDate(){document.getElementById('eventDate').textContent=dateLabel(new Date());}
+refreshDate();setInterval(refreshDate,30000);
+</script></body></html>
