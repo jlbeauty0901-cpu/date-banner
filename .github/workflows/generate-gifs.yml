@@ -1,0 +1,61 @@
+name: Generate GIFs Weekly
+on:
+  schedule:
+    # Every Monday 00:05 Asia/Seoul = Sunday 15:05 UTC.
+    # GitHub scheduled runs may be delayed.
+    - cron: '5 15 * * 0'
+  workflow_dispatch:
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+concurrency:
+  group: date-banner-weekly
+  cancel-in-progress: false
+env:
+  TZ: Asia/Seoul
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --no-save --package-lock=false puppeteer gif-encoder-2 pngjs
+      - name: Install Chrome dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgbm-dev fonts-noto-cjk
+      - name: Generate GIFs
+        run: node generate-gifs.js
+      - name: Commit and push GIFs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add index-1.gif
+          git diff --staged --quiet || git commit -m "Update GIF - $(date +'%Y-%m-%d')"
+          git push origin HEAD:main
+      # Bot commits alone do not trigger a branch-based Pages rebuild.
+      - name: Prepare public files
+        run: |
+          mkdir -p _site
+          cp index-1.html banner-original.jpg index-1.gif _site/
+          cp index-1.html _site/index.html
+          touch _site/.nojekyll
+      - name: Upload public files
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - name: Publish updated banner
+        id: deployment
+        uses: actions/deploy-pages@v4
